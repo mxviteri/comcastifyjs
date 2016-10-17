@@ -15,14 +15,14 @@ var comcastifyjs = (function () {
           slowloadDiv.style.left = img.offsetLeft + 'px';
 
           // update slowload div
-          slowloadDiv.style.clip = 'rect(' + newTopClip + 'px auto auto auto)';
+          slowloadDiv.style.clip = slowloadDiv.horizontalOrientation ? 'rect(auto auto auto ' + newTopClip + 'px)' : 'rect(' + newTopClip + 'px auto auto auto)';
         }
 
         // check stopping conditions
-        var maxImageHeight = img.height * args.loadMaxPercent;
+        var maxImage = slowloadDiv.horizontalOrientation ? img.width * args.loadMaxPercent : img.height * args.loadMaxPercent;
 
         //process progressive JPEG unblurring
-        if (args.progressiveJPEG && newTopClip >= maxImageHeight) {
+        if (args.progressiveJPEG && newTopClip >= maxImage) {
           var newTopClipBlur = slowloadDiv.slothifyData.blurImageTopClip + args.loadIncrement;
 
           //continue to honor the randomPause setting
@@ -33,15 +33,15 @@ var comcastifyjs = (function () {
             slowloadDiv.slothifyData.blurImg.style.left = img.offsetLeft + 'px';
 
             // update slowload div
-            slowloadDiv.slothifyData.blurImg.style.clip = 'rect(' + newTopClipBlur + 'px auto auto auto)';
+            slowloadDiv.slothifyData.blurImg.style.clip = slowloadDiv.horizontalOrientation ? 'rect(auto auto auto ' + newTopClipBlur + 'px)' : 'rect(' + newTopClipBlur + 'px auto auto auto)';
 
             slowloadDiv.slothifyData.blurImageTopClip = newTopClipBlur;
           }
 
           // check stopping conditions
-          var maxImageHeightBlur = img.height * args.loadMaxPercent;
+          var maxImageBlur = slowloadDiv.horizontalOrientation ? img.width * args.loadMaxPercent : img.height * args.loadMaxPercent;
 
-          if (newTopClipBlur < maxImageHeightBlur) {
+          if (newTopClipBlur < maxImageBlur) {
             progressiveJPEGInProgress = true;
           }
         }
@@ -50,7 +50,7 @@ var comcastifyjs = (function () {
           setTimeout(slowloadModiferCallback(slowloadDiv, args), args.loadSpeed);
         } else if (typeof img.naturalHeight !== "undefined" && img.naturalWidth === 0) {
           setTimeout(slowloadModiferCallback(slowloadDiv, args), args.loadSpeed);
-        } else if (!maxImageHeight || maxImageHeight === 0 || newTopClip < maxImageHeight || progressiveJPEGInProgress) {
+        } else if (!maxImage || maxImage === 0 || newTopClip < maxImage || progressiveJPEGInProgress) {
           // create new update timeout
           slowloadDiv.slothifyData.imageTopClip = newTopClip;
           setTimeout(slowloadModiferCallback(slowloadDiv, args), args.loadSpeed);
@@ -80,7 +80,8 @@ var comcastifyjs = (function () {
         randLoadIncrement: args.randLoadIncrement || false,               // true to randomize load increment
         loadIncrement: args.loadIncrement || 1,                           // pixels to load per pass
         randomPause: args.randomPause || 0.0,                             // probability of skipping a pass
-        progressiveJPEG: args.progressiveJPEG || false        // enable progressive JPEG emulation
+        progressiveJPEG: args.progressiveJPEG || false,        			  // enable progressive JPEG emulation
+		horizontalOrientation: args.horizontalOrientation || false		  // vertical or horizontal loading
       };
 
       // make 'em load slow
@@ -97,14 +98,17 @@ var comcastifyjs = (function () {
         slowload.style.position = 'absolute';
         slowload.style.top = img.offsetTop + 'px';
         slowload.style.left = img.offsetLeft + 'px';
-        slowload.style.clip = 'rect(0 auto auto auto)';
+        slowload.style.clip = params.horizontalOrientation ? 'rect(auto auto auto 0)' : 'rect(0 auto auto auto)';
 
-        // remember what the max height should be for later calculation
+        // remember what the max height/width should be for later calculation
         slowload.slothifyData = {
             img: img,
             imageTopClip: 0,
-            maxImageHeight: img.height * params.loadMaxPercent
+            maxImage: params.horizontalOrientation ? img.height * params.loadMaxPercent : img.width * params.loadMaxPercent
         };
+		
+		// remember the set or default load orientation
+		slowload.horizontalOrientation = params.horizontalOrientation;
 
         // setup the blurred image for progressive JPEG if needed
         if (params.progressiveJPEG === true) {
@@ -115,7 +119,7 @@ var comcastifyjs = (function () {
           progressiveJPEGdiv.style.position = 'absolute';
           progressiveJPEGdiv.style.top = img.offsetTop + 'px';
           progressiveJPEGdiv.style.left = img.offsetLeft + 'px';
-          progressiveJPEGdiv.style.clip = 'rect(0 auto auto auto)';
+          progressiveJPEGdiv.style.clip = params.horizontalOrientation ? 'rect(auto auto auto 0)' : 'rect(0 auto auto auto)';
           progressiveJPEGdiv.style.overflow = 'hidden';
 
           var progressiveJPEGimg = document.createElement('IMG');
